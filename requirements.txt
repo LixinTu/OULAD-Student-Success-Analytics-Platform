@@ -1,0 +1,19 @@
+# OULAD Student Risk Prediction System - Dependencies
+
+# Core Data Science Libraries
+pandas>=1.3.0
+numpy>=1.21.0
+scikit-learn>=1.0.0
+
+# Machine Learning
+xgboost>=2.0.0
+
+# Explainable AI
+shap>=0.41.0
+
+# Visualization
+matplotlib>=3.4.0
+seaborn>=0.11.0
+
+# Additional utilities
+scipy>=1.7.0
