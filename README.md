@@ -2,6 +2,13 @@
 
 Machine learning-based student performance prediction with time-slicing feature engineering
 
+## Power BI Dashboard
+
+📄 **Student Success Prediction – Power BI Dashboard**  
+[Student_Success_Prediction_OULAD_PowerBI.pdf](portfolio/Student_Success_Prediction_OULAD_PowerBI.pdf)
+
+Executive-level Power BI dashboard visualizing student risk, engagement, and assignment performance to support data-driven academic intervention.
+
 ## Overview
 
 Student success prediction model built on OULAD dataset using time-slicing and innovative feature engineering to predict student academic outcomes at day 90 of the course.
