@@ -1,134 +1,114 @@
-# OULAD Student Success Prediction System
+# OULAD Student Success Prediction: Full-Stack Data Analyst / Data Scientist Portfolio Project
 
-Machine learning-based student performance prediction with time-slicing feature engineering
+This project operationalizes student-risk analytics into a production-style workflow that an education organization can run daily: ingest data, engineer time-sliced features, train/evaluate a predictive model, publish BI-ready marts, trigger alerts, simulate intervention experiments, and estimate business ROI. It demonstrates analytics engineering + data science + stakeholder reporting in one reproducible repository.
 
-## Power BI Dashboard
+## Executive Overview
+Student dropout risk can be detected early from engagement and assessment behavior. This repository turns exploratory notebook work into an end-to-end analytics system that scores risk each run, publishes dashboards-ready outputs, raises operational alerts, and provides decision support (A/B simulation + ROI sensitivity) for intervention planning.
 
-📄 **Student Success Prediction – Power BI Dashboard**  
-[Student_Success_Prediction_OULAD_PowerBI.pdf](portfolio/Student_Success_Prediction_OULAD_PowerBI.pdf)
+## Dataset Overview (OULAD)
+- The Open University Learning Analytics Dataset (OULAD) contains student demographics, course interactions, and assessments.
+- This pipeline expects raw CSVs in `data/raw/`:
+  - `studentInfo.csv`
+  - `studentAssessment.csv`
+  - `assessments.csv`
+- Engineered features represent weekly progression and performance:
+  - rolling score averages,
+  - cumulative submissions,
+  - short-term score trend,
+  - static demographic/context features.
 
-Executive-level Power BI dashboard visualizing student risk, engagement, and assignment performance to support data-driven academic intervention.
+## End-to-End Architecture
+`Raw Data (CSV) -> ETL (extract/transform/load) -> Feature Engineering -> Model Training/Evaluation -> Latest Risk Prediction -> BI Marts -> Alerts + A/B Simulation + ROI -> Executive Report`
 
-## Overview
+## Data Setup
+### Option A: Run with real OULAD files
+1. Create `data/raw/`.
+2. Place the expected OULAD CSV files:
+   - `studentInfo.csv`
+   - `studentAssessment.csv`
+   - `assessments.csv`
+3. Run pipeline.
 
-Student success prediction model built on OULAD dataset using time-slicing and innovative feature engineering to predict student academic outcomes at day 90 of the course.
+### Option B: Demo mode (for reviewers)
+If files are missing, the pipeline automatically uses a small synthetic dataset and still generates complete outputs.
 
-## Model Performance
-
-![Model Performance](images/oulad_model_analysis.png)
-
-| Metric | Value |
-|--------|-------|
-| ROC-AUC | 0.945 |
-| Accuracy | 88.2% |
-| Recall | 95.2% |
-| F1-Score | 0.93 |
-
-## Core Features
-
-1. **Total Clicks**: Cumulative clicks up to day 90
-2. **Learning Stability**: Standard deviation of daily clicks (innovative feature)
-3. **Early Preview**: Clicks before course start
-4. **Recent Trend**: Clicks between day 60-90
-5. **Assignment Performance**: Average score and submission count
-
-## Tech Stack
-
-- Python 3.8+
-- XGBoost
-- Pandas, NumPy
-- Scikit-learn
-- Matplotlib, Seaborn
-
-## Quick Start
-
-### Install Dependencies
-
+## How to Run
+### 1) Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### Prepare Data
-
-Download OULAD dataset:
-- studentInfo.csv
-- studentVle.csv
-- studentAssessment.csv
-
-Dataset: https://www.kaggle.com/datasets/anlgrbz/student-demographics-online-education-dataoulad
-
-### Run Model
-
+### 2) Run end-to-end (primary command)
 ```bash
-python oulad_english_version.py
+bash run_pipeline.sh
 ```
 
-Or run directly in Kaggle Notebook.
-
-## Feature Importance
-
-XGBoost feature importance ranking:
-
-1. Assignment submission count (most important)
-2. Recent trend clicks
-3. Average assignment score
-4. Learning stability (std)
-5. Total clicks
-6. Early preview clicks
-
-## Project Structure
-
-```
-OULAD-Student-Success-Prediction/
-├── oulad_english_version.py
-├── README.md
-├── requirements.txt
-├── .gitignore
-└── images/
-    └── oulad_model_analysis.png
+Alternative:
+```bash
+make run
 ```
 
-## Model Configuration
+## What the Pipeline Produces
+- `outputs/metrics_latest.json` (AUC, PR AUC, precision/recall, confusion matrix)
+- `outputs/predictions_latest.csv` (risk scores for latest week)
+- `outputs/marts/student_risk_latest.csv` (BI fact table)
+- `outputs/marts/course_summary_latest.csv` (BI aggregate table)
+- `outputs/alerts/alert_latest.md` (threshold + spike alerts)
+- `outputs/experiments/assignment_latest.csv` (seeded A/B assignments)
+- `reports/ab_test_report.md` (uplift scenarios + CIs + p-values)
+- `reports/roi_sensitivity.csv` (ROI grid across uplift & intervention cost)
+- `reports/executive_summary.md` (business summary)
 
-```python
-XGBClassifier(
-    n_estimators=200,
-    max_depth=6,
-    learning_rate=0.1,
-    subsample=0.8,
-    colsample_bytree=0.8
-)
+## Experiment Design
+- **Offline A/B Simulation**: top-K at-risk students are seeded-randomized into treatment/control.
+- Simulated treatment uplift scenarios: **3%, 5%, 8%** pass-probability uplift.
+- Statistical outputs:
+  - pass rate difference,
+  - bootstrap confidence intervals,
+  - two-proportion z-test p-value.
+- **Important**: this is offline simulation, not causal proof. A real randomized online intervention is the next step.
+
+## Alerts Implemented
+1. **Threshold alert**: triggers when high-risk proportion exceeds configured threshold.
+2. **Spike alert**: triggers when mean risk score increases beyond configured week-over-week %.
+
+Alert output includes trigger reason, summary stats, top 10 student IDs, and recommended actions.
+
+## Outputs Gallery
+- Marts: `outputs/marts/`
+- Alerts: `outputs/alerts/alert_latest.md`
+- Experiment report: `reports/ab_test_report.md`
+- ROI sensitivity: `reports/roi_sensitivity.csv`
+- Existing EDA image: `images/oulad_model_analysis.png`
+
+## Repo Structure
+```text
+src/
+  config.py
+  pipeline.py
+  utils/logging.py
+  etl/{extract.py,transform.py,load.py}
+  features/build_features.py
+  model/{train.py,predict.py,evaluate.py}
+  marts/build_marts.py
+  alerts/alert.py
+  experiments/ab_simulation.py
+db/{schema.sql,marts.sql}
+outputs/{marts,alerts,experiments,...}
+reports/{executive_summary.md,ab_test_report.md,roi_sensitivity.csv}
+dashboards/powerbi_refresh_guide.md
+.github/workflows/daily_pipeline.yml
+run_pipeline.sh
+Makefile
+.env.example
 ```
 
-## Resume Description Templates
+## Notebook Preservation
+The original exploratory notebook is preserved:
+- `oulad-student-success-prediction.ipynb`
 
-**Technical Focus**
-```
-OULAD Student Success Prediction System (ROC-AUC: 0.945)
-- Designed 5 time-series features including learning stability for 90-day early prediction
-- Built XGBoost model with 88.2% accuracy for student performance prediction
-- Tech Stack: Python, XGBoost, Scikit-learn, Pandas
-```
-
-**Business Focus**
-```
-Student Academic Performance Prediction System
-- Built ML model on 32,000+ student records, achieving ROC-AUC 0.945
-- Identified assignment behavior and recent learning status as key success indicators
-- Enabled mid-course accurate prediction for early intervention
-```
-
-## Dataset
-
-- Source: Open University, UK
-- Scale: 32,593 students, 22 courses
-- Period: 2013-2014 academic year
-
-## References
-
-1. Kuzilek, J., et al. (2017). Open university learning analytics dataset. Scientific Data, 4(1), 1-8.
-2. Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. KDD'16.
-
-## License
-
-MIT License
+## Future Improvements
+- Replace file-based marts with warehouse tables (BigQuery/Snowflake/Postgres).
+- Add model registry + drift monitoring + automated retraining gates.
+- Move from offline simulation to live randomized interventions.
+- Add causal inference methods (CUPED/uplift modeling) and heterogeneity analysis.
