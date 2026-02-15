@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from src.pipeline import run_pipeline
@@ -27,6 +28,13 @@ def test_demo_pipeline_smoke(monkeypatch: pytest.MonkeyPatch, backend: str) -> N
 
     missing = [str(path) for path in expected_outputs if not path.exists()]
     assert not missing, f"Missing expected artifacts: {missing}"
+
+    student_risk = pd.read_csv("outputs/marts/student_risk_daily_sample.csv")
+    assert student_risk["week"].nunique() > 1
+
+    course_summary = pd.read_csv("outputs/marts/course_summary_daily_sample.csv")
+    assert "week" in course_summary.columns
+    assert course_summary["week"].nunique() > 1
 
     manifest = json.loads(Path("outputs/artifacts_manifest.json").read_text())
     assert manifest["model_backend"] == "sklearn"

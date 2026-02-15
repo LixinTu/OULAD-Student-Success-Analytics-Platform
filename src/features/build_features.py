@@ -7,7 +7,7 @@ import pandas as pd
 
 
 def build_time_sliced_features(clean_df: pd.DataFrame) -> pd.DataFrame:
-    clean_df = clean_df.sort_values(["id_student", "week"]).copy()
+    clean_df = clean_df.sort_values(["id_student", "code_module", "week"]).copy()
     grouped = clean_df.groupby(["id_student", "week", "code_module"], as_index=False).agg(
         weekly_score_mean=("score", "mean"),
         weekly_submissions=("submitted", "sum"),
@@ -18,11 +18,15 @@ def build_time_sliced_features(clean_df: pd.DataFrame) -> pd.DataFrame:
         pass_probability_base=("pass_probability_base", "max"),
     )
 
-    grouped["cum_submissions"] = grouped.groupby("id_student")["weekly_submissions"].cumsum()
-    grouped["rolling_score_3w"] = grouped.groupby("id_student")["weekly_score_mean"].transform(
-        lambda s: s.rolling(3, min_periods=1).mean()
+    grouped["cum_submissions"] = grouped.groupby(["id_student", "code_module"])[
+        "weekly_submissions"
+    ].cumsum()
+    grouped["rolling_score_3w"] = grouped.groupby(["id_student", "code_module"])[
+        "weekly_score_mean"
+    ].transform(lambda s: s.rolling(3, min_periods=1).mean())
+    grouped["score_trend_2w"] = (
+        grouped.groupby(["id_student", "code_module"])["weekly_score_mean"].diff().fillna(0)
     )
-    grouped["score_trend_2w"] = grouped.groupby("id_student")["weekly_score_mean"].diff().fillna(0)
 
     score_factor = 1 - (grouped["rolling_score_3w"] / 100)
     submit_factor = np.clip(

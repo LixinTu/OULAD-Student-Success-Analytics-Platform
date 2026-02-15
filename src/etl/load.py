@@ -61,6 +61,24 @@ def initialize_schema(config: PipelineConfig, db: DBClient) -> None:
     for stmt in statements:
         db.execute(stmt)
 
+    if db.driver == "sqlite":
+        cols = pd.read_sql_query("PRAGMA table_info(course_summary_daily)", db.conn)[
+            "name"
+        ].tolist()
+        if "week" not in cols:
+            db.execute("ALTER TABLE course_summary_daily ADD COLUMN week INTEGER")
+    else:
+        cur = db.conn.cursor()
+        cur.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name='course_summary_daily' AND column_name='week'
+            """
+        )
+        if cur.fetchone() is None:
+            db.execute("ALTER TABLE course_summary_daily ADD COLUMN week INTEGER")
+
 
 def load_processed_data(clean_df: pd.DataFrame, config: PipelineConfig, db: DBClient) -> None:
     clean_df.to_csv(config.data_processed_dir / "clean_events.csv", index=False)

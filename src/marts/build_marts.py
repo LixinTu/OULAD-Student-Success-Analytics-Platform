@@ -11,10 +11,10 @@ from src.etl.load import DBClient
 
 
 def build_marts(
-    latest_predictions: pd.DataFrame, config: PipelineConfig, db: DBClient
+    predictions: pd.DataFrame, config: PipelineConfig, db: DBClient
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     run_date = datetime.utcnow().date().isoformat()
-    student_risk_daily = latest_predictions[
+    student_risk_daily = predictions[
         [
             "id_student",
             "code_module",
@@ -40,13 +40,13 @@ def build_marts(
     ]
 
     course_summary_daily = (
-        student_risk_daily.groupby(["run_date", "code_module"], as_index=False)
+        student_risk_daily.groupby(["run_date", "week", "code_module"], as_index=False)
         .agg(
             student_count=("id_student", "nunique"),
             avg_risk_score=("risk_score", "mean"),
             high_risk_rate=("high_risk_flag", "mean"),
         )
-        .sort_values("high_risk_rate", ascending=False)
+        .sort_values(["week", "high_risk_rate"], ascending=[True, False])
     )
 
     db.insert_df("student_risk_daily", student_risk_daily)

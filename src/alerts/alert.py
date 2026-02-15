@@ -11,9 +11,9 @@ from src.etl.load import DBClient
 
 
 def generate_alert(
-    latest_predictions: pd.DataFrame, features: pd.DataFrame, config: PipelineConfig, db: DBClient
+    prediction_snapshot: pd.DataFrame, features: pd.DataFrame, config: PipelineConfig, db: DBClient
 ) -> str:
-    high_risk_rate = latest_predictions["high_risk_flag"].mean()
+    high_risk_rate = prediction_snapshot["high_risk_flag"].mean()
 
     week_mean = (
         features.groupby("week", as_index=False)["dropout_risk_target"].mean().sort_values("week")
@@ -27,7 +27,7 @@ def generate_alert(
 
     threshold_triggered = high_risk_rate > config.high_risk_threshold
     spike_triggered = spike_pct > config.spike_threshold_pct
-    top_10 = latest_predictions.head(10)["id_student"].astype(str).tolist()
+    top_10 = prediction_snapshot.head(10)["id_student"].astype(str).tolist()
 
     trigger_lines = []
     alert_type = "none"
@@ -54,7 +54,7 @@ Generated: {datetime.utcnow().isoformat()}Z
 ## Summary Stats
 - Current high-risk rate: **{high_risk_rate:.2%}**
 - Week-over-week risk change: **{spike_pct:.2%}**
-- Current week modeled students: **{len(latest_predictions)}**
+- Current week modeled students: **{len(prediction_snapshot)}**
 
 ## Top 10 At-Risk Student IDs
 {chr(10).join([f'- {sid}' for sid in top_10])}

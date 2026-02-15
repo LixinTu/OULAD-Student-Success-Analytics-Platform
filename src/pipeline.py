@@ -17,7 +17,7 @@ from src.features.build_features import build_time_sliced_features
 from src.marts.build_marts import build_marts
 from src.model.evaluate import evaluate_model
 from src.model.explain import generate_shap_artifacts
-from src.model.predict import predict_latest_risk
+from src.model.predict import predict_risk_timeseries, select_prediction_snapshot
 from src.model.train import train_model
 from src.storage import S3Storage
 from src.utils.logging import get_logger
@@ -190,12 +190,11 @@ def run_pipeline(demo_mode: bool) -> None:
     )
     top_features = generate_shap_artifacts(model, X_train, y_train, config)
 
-    latest_predictions = predict_latest_risk(
-        model, features, config.current_week, config.high_risk_threshold
-    )
+    predictions = predict_risk_timeseries(model, features, config.high_risk_threshold)
+    latest_predictions = select_prediction_snapshot(predictions, config.current_week)
     latest_predictions.to_csv(config.outputs_dir / "predictions_latest.csv", index=False)
 
-    build_marts(latest_predictions, config, db)
+    build_marts(predictions, config, db)
     generate_alert(latest_predictions, features, config, db)
     _, _, roi_df = run_ab_simulation(latest_predictions, config, db)
 

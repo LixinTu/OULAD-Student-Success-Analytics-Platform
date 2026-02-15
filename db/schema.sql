@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS student_risk_daily (
 
 CREATE TABLE IF NOT EXISTS course_summary_daily (
     run_date DATE,
+    week INTEGER,
     code_module VARCHAR(16),
     student_count INTEGER,
     avg_risk_score DOUBLE PRECISION,
