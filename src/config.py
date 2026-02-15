@@ -24,7 +24,7 @@ class PipelineConfig:
     random_seed: int
     high_risk_threshold: float
     spike_threshold_pct: float
-    current_week: int
+    current_week: int | None
     split_week: int
     top_k_at_risk: int
     value_per_pass: float
@@ -43,6 +43,16 @@ def _env_float(name: str, default: float) -> float:
 
 def _env_int(name: str, default: int) -> int:
     return int(os.getenv(name, default))
+
+
+def _env_optional_int(name: str) -> int | None:
+    value = os.getenv(name)
+    if value is None:
+        return None
+    value = value.strip()
+    if value == "":
+        return None
+    return int(value)
 
 
 def load_config(demo_mode: bool | None = None) -> PipelineConfig:
@@ -69,7 +79,7 @@ def load_config(demo_mode: bool | None = None) -> PipelineConfig:
         random_seed=_env_int("PIPELINE_RANDOM_SEED", 42),
         high_risk_threshold=_env_float("HIGH_RISK_THRESHOLD", 0.25),
         spike_threshold_pct=_env_float("RISK_SPIKE_THRESHOLD_PCT", 0.10),
-        current_week=_env_int("CURRENT_WEEK", 10),
+        current_week=_env_optional_int("CURRENT_WEEK"),
         split_week=_env_int("SPLIT_WEEK", 7),
         top_k_at_risk=_env_int("TOP_K_AT_RISK", 50),
         value_per_pass=_env_float("VALUE_PER_PASS", 1200.0),

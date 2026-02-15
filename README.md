@@ -91,7 +91,7 @@ Entrypoint: `src/pipeline.py`
 5. Train risk model using week-based split (`src/model/train.py`).
 6. Evaluate performance (`src/model/evaluate.py`).
 7. Generate SHAP explainability artifacts (`src/model/explain.py`).
-8. Publish marts (`src/marts/build_marts.py`).
+8. Score full weekly history and publish marts (`src/model/predict.py`, `src/marts/build_marts.py`).
 9. Trigger alerts and log them (`src/alerts/alert.py`).
 10. Run offline A/B simulation + ROI grid (`src/experiments/ab_simulation.py`).
 11. Produce executive summary (`reports/executive_summary.md`).
@@ -102,6 +102,8 @@ To avoid random leakage, the model is evaluated with time ordering:
 - Test: `week >= SPLIT_WEEK`
 
 This approximates real operations where future student behavior must be predicted from historical data.
+
+Marts are generated as full history time series across all available weeks (0..max week) per run date. `CURRENT_WEEK` is now an optional snapshot override for alerts/experiments only.
 
 ## Explainability
 - **sklearn backend**: SHAP artifacts are generated (`outputs/shap_top_features.json`, `outputs/shap_summary.png`).
@@ -156,8 +158,6 @@ These same checks are wired into `.github/workflows/daily_pipeline.yml`.
 ### Marts (BI-ready samples)
 - `outputs/marts/student_risk_daily_sample.csv`
 - `outputs/marts/course_summary_daily_sample.csv`
-- `outputs/marts/student_risk_latest.csv`
-- `outputs/marts/course_summary_latest.csv`
 
 ### Alerts, experiments, and reports
 - `outputs/alerts/alert_latest.md`
@@ -222,6 +222,7 @@ PyTorch installation may vary by OS/CUDA; if needed, use the official PyTorch in
 - `DATABASE_URL`
 - `PIPELINE_DEMO_MODE=true|false`
 - `SPLIT_WEEK=7`
+- `CURRENT_WEEK=<optional snapshot week override>`
 - `HIGH_RISK_THRESHOLD=0.25`
 - `RISK_SPIKE_THRESHOLD_PCT=0.10`
 - `MODEL_BACKEND=sklearn|pytorch|tensorflow`
@@ -229,6 +230,20 @@ PyTorch installation may vary by OS/CUDA; if needed, use the official PyTorch in
 - `AWS_REGION=us-east-1`
 - `S3_BUCKET=<your-bucket>`
 - `S3_PREFIX=oulad-artifacts`
+
+
+
+## Mart Verification SQL (required)
+Run these after the pipeline to confirm full-history weekly marts:
+
+```sql
+select min(week), max(week), count(distinct week) from student_risk_daily;
+select week, count(*) from student_risk_daily group by week order by week limit 20;
+select min(week), max(week), count(*) from course_summary_daily;
+select week, count(*) from course_summary_daily group by week order by week limit 20;
+```
+
+Expected behavior on real/demo OULAD-like data: `count(distinct week) > 1` for `student_risk_daily`.
 
 ## Power BI: Connect to Postgres
 1) In Power BI Desktop, select **Get Data** → **PostgreSQL database**.
@@ -241,7 +256,7 @@ PyTorch installation may vary by OS/CUDA; if needed, use the official PyTorch in
    - `course_summary_daily`
    - `experiment_results`
    - `alert_log`
-7) Click **Load** and build visuals (examples: risk trend by `run_date`, module heatmap by `high_risk_rate`, alert timeline by `run_ts`).
+7) Click **Load** and build visuals (examples: risk trend by `week` with legend `run_date`, module heatmap by weekly `high_risk_rate`, alert timeline by `run_ts`).
 
 ### S3 Artifact Publishing
 Set these env vars: `STORAGE_BACKEND`, `AWS_REGION`, `S3_BUCKET`, `S3_PREFIX`.
